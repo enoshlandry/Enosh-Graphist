@@ -93,3 +93,18 @@ footer{background:#11112b;color:white;padding:40px 0}.footer-inner{display:grid;
 @media(max-width:850px){.project-modal{grid-template-columns:1fr;max-height:94vh}.modal-visual{min-height:55vh;padding:32px 52px}.gallery-frame img{max-height:58vh}.modal-info{padding:24px}.modal-info h2{font-size:34px}.upload-preview{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:640px){.admin-grid{grid-template-columns:1fr}.admin-panel{padding:22px}.admin-item{grid-template-columns:58px 1fr}.admin-item img{width:58px;height:58px}.admin-item-actions{grid-column:2}.modal{padding:8px}.project-modal{width:98vw;border-radius:20px}.modal-visual{min-height:50vh}.gallery-frame img{max-width:86vw;max-height:55vh}.gallery-nav{width:42px;height:42px;font-size:31px}.nav-links{display:none}.menu-btn{display:block}.nav-cta{display:none}}
 @media(prefers-reduced-motion:reduce){.modal.open,.admin-modal.open,.project-modal,.admin-panel,.gallery-frame,.work-card,.work-image img{animation:none;transition:none}}
+
+/* V3.1 — galerie projets : animation renforcée */
+.project-modal{transform-origin:center center;will-change:transform,opacity}
+.modal.open .project-modal{animation:projectOpen .55s cubic-bezier(.16,1,.3,1) both}
+.modal.open .modal-visual{animation:visualReveal .65s cubic-bezier(.16,1,.3,1) both}
+.gallery-frame.gallery-swap{animation:gallerySwap .42s cubic-bezier(.16,1,.3,1) both}
+.gallery-frame img{will-change:transform,opacity;transition:transform .3s ease}
+.gallery-frame img:hover{transform:scale(1.012)}
+.gallery-thumb{flex:0 0 72px;height:58px;border:2px solid transparent;padding:0;border-radius:9px;overflow:hidden;background:var(--bg);cursor:pointer;opacity:.62;transition:opacity .2s ease,transform .2s ease,border-color .2s ease}
+.gallery-thumb:hover,.gallery-thumb.active{opacity:1;border-color:var(--indigo);transform:translateY(-2px)}
+@keyframes projectOpen{0%{opacity:0;transform:translateY(28px) scale(.94)}60%{opacity:1;transform:translateY(-3px) scale(1.008)}100%{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes visualReveal{0%{opacity:0;filter:blur(8px);transform:scale(.97)}100%{opacity:1;filter:blur(0);transform:scale(1)}}
+@keyframes gallerySwap{0%{opacity:0;transform:scale(.965) translateX(10px);filter:blur(4px)}100%{opacity:1;transform:scale(1) translateX(0);filter:blur(0)}}
+@media(max-width:640px){.gallery-thumb{flex-basis:64px;height:52px}.modal.open .project-modal{animation-duration:.42s}}
+@media(prefers-reduced-motion:reduce){.modal.open .project-modal,.modal.open .modal-visual,.gallery-frame.gallery-swap{animation:none}.gallery-frame img{transition:none}}
