@@ -1,9 +1,13 @@
-# Enosh. Graphist. — V3
-Portfolio statique GitHub Pages connecté à Supabase.
+# Enosh. Graphist. — V5
 
-## Installation
-1. Publier les fichiers sur GitHub Pages.
-2. Créer un utilisateur administrateur dans Supabase > Authentication > Users.
-3. Ouvrir le bouton Admin du portfolio et se connecter avec cet email/mot de passe.
+Portfolio GitHub Pages + Supabase.
 
-La clé utilisée dans `script.js` est une clé Publishable Supabase. Ne jamais mettre une clé Secret/service_role dans le navigateur.
+- Design basé sur la V2 professionnelle.
+- Galerie jusqu'à 6 images par projet.
+- Animation d'ouverture et de changement d'image.
+- Format naturel des visuels dans la fenêtre.
+- Projets et images enregistrés dans Supabase.
+- Administration via Supabase Auth.
+
+## Déploiement
+Remplacer `index.html`, `style.css`, `script.js`, et conserver `.nojekyll` et `favicon.svg`.
