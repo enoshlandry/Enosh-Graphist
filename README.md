@@ -1,20 +1,9 @@
-# Enosh. Graphist.
+# Enosh. Graphist. — V3
+Portfolio statique GitHub Pages connecté à Supabase.
 
-Portfolio statique de graphiste print & digital.
+## Installation
+1. Publier les fichiers sur GitHub Pages.
+2. Créer un utilisateur administrateur dans Supabase > Authentication > Users.
+3. Ouvrir le bouton Admin du portfolio et se connecter avec cet email/mot de passe.
 
-## Déploiement GitHub Pages
-1. Mets `index.html`, `style.css`, `script.js`, `favicon.svg` à la racine du dépôt.
-2. GitHub → Settings → Pages.
-3. Source : **Deploy from a branch**.
-4. Branche : `principal` (ou ta branche de publication).
-5. Dossier : `/ (root)`.
-6. Enregistre.
-
-## Administration
-Le bouton `Admin` en bas du site permet de gérer les projets dans le navigateur.
-Mot de passe actuel : `enosh2026`.
-
-⚠️ Ce système est pratique pour une maquette/static site, mais ce n'est pas une vraie authentification serveur. Le mot de passe est visible dans le JavaScript. Pour un site professionnel avec plusieurs utilisateurs, il faudra un backend ou un CMS.
-
-## Contact
-Le formulaire prépare un email via `mailto:`. Pour recevoir les messages sans dépendre du logiciel mail du visiteur, branche plus tard un vrai service de formulaire ou un backend.
+La clé utilisée dans `script.js` est une clé Publishable Supabase. Ne jamais mettre une clé Secret/service_role dans le navigateur.
