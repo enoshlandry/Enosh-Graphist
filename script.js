@@ -60,11 +60,14 @@ function openProject(id){
 function closeProject(){$("#projectModal").classList.remove("open");$("#projectModal").setAttribute("aria-hidden","true");document.body.classList.remove("locked");}
 function renderGallery(){
  const p=state.currentProject, imgs=p?.images||[], frame=$("#galleryFrame");
+ frame.classList.remove("gallery-swap");
+ void frame.offsetWidth;
+ frame.classList.add("gallery-swap");
  if(!imgs.length){frame.innerHTML='<div style="color:white;text-align:center">Aucun visuel disponible</div>';$("#galleryCount").textContent="0 / 0";$("#thumbs").innerHTML="";return}
  const item=imgs[state.galleryIndex];frame.innerHTML=`<img src="${esc(item.image_url)}" alt="${esc(p.title)} — visuel ${state.galleryIndex+1}">`;
  $("#galleryCount").textContent=`${state.galleryIndex+1} / ${imgs.length}`;
  $("#galleryPrev").style.display=imgs.length>1?"block":"none";$("#galleryNext").style.display=imgs.length>1?"block":"none";
- $("#thumbs").innerHTML=imgs.map((x,i)=>`<button class="thumb ${i===state.galleryIndex?"active":""}" data-i="${i}" aria-label="Voir le visuel ${i+1}"><img src="${esc(x.image_url)}" alt=""></button>`).join("");
+ $("#thumbs").innerHTML=imgs.map((x,i)=>`<button class="gallery-thumb thumb ${i===state.galleryIndex?"active":""}" data-i="${i}" aria-label="Voir le visuel ${i+1}"><img src="${esc(x.image_url)}" alt=""></button>`).join("");
  $("#thumbs").querySelectorAll(".thumb").forEach(b=>b.onclick=()=>{state.galleryIndex=+b.dataset.i;renderGallery()});
 }
 function changeGallery(delta){const n=state.currentProject?.images?.length||0;if(!n)return;state.galleryIndex=(state.galleryIndex+delta+n)%n;renderGallery()}
