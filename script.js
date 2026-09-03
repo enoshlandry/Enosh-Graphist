@@ -10,10 +10,17 @@ const defaultProjects=[
  {id:6,title:"Direction Artistique",tag:"Direction artistique",client:"Projet créatif",year:"2026",sector:"Communication",c1:"#17173A",c2:"#6B70D6",desc:"Construction d'une direction visuelle de campagne : ton, composition, rythme, système graphique et supervision des déclinaisons.",deliverables:["Moodboard","Direction artistique","Système graphique","Suivi créatif"]}
 ];
 
-let projects=loadProjects(), currentIndex=0, imageData="";
+let projects=loadProjects(), currentIndex=0, galleryIndex=0, imageData=[];
 
-function loadProjects(){try{const x=JSON.parse(localStorage.getItem(STORAGE_KEY));return Array.isArray(x)&&x.length?x:structuredClone(defaultProjects)}catch{return structuredClone(defaultProjects)}}
-function saveProjects(){localStorage.setItem(STORAGE_KEY,JSON.stringify(projects))}
+function normalizeProject(p){
+ const images=Array.isArray(p.images)?p.images:(p.image?[p.image]:[]);
+ return {...p,images:images.slice(0,6),image:images[0]||""};
+}
+function loadProjects(){try{const x=JSON.parse(localStorage.getItem(STORAGE_KEY));return Array.isArray(x)&&x.length?x.map(normalizeProject):structuredClone(defaultProjects).map(normalizeProject)}catch{return structuredClone(defaultProjects).map(normalizeProject)}}
+function saveProjects(){
+ try{localStorage.setItem(STORAGE_KEY,JSON.stringify(projects)); return true}
+ catch(e){alert("La mémoire du navigateur est pleine. Réduis la taille des images puis réessaie."); return false}
+}
 function esc(s=""){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
 
 function renderProjects(filter="Tous"){
@@ -22,7 +29,7 @@ function renderProjects(filter="Tous"){
  grid.innerHTML=list.map(p=>`
  <article class="work-card" data-id="${p.id}" tabindex="0" aria-label="Voir ${esc(p.title)}">
    <div class="work-image" style="--c1:${esc(p.c1||"#2B2E83")};--c2:${esc(p.c2||"#17173A")}">
-     ${p.image?`<img src="${esc(p.image)}" alt="${esc(p.title)}">`:`<div class="work-art"><div class="art-word">${esc(p.title.split(" ").slice(0,2).join("<br>"))}<br><em>${esc((p.tag||"DESIGN").toUpperCase())}</em></div></div>`}
+     ${(p.images&&p.images.length?p.images[0]:p.image)?`<img src="${esc((p.images&&p.images.length?p.images[0]:p.image))}" alt="${esc(p.title)}">`:`<div class="work-art"><div class="art-word">${esc(p.title.split(" ").slice(0,2).join("<br>"))}<br><em>${esc((p.tag||"DESIGN").toUpperCase())}</em></div></div>`}
    </div>
    <div class="work-info"><div><h3>${esc(p.title)}</h3><span>${esc(p.tag)} · ${esc(p.year||"")}</span></div><div class="work-arrow">↗</div></div>
  </article>`).join("");
@@ -32,16 +39,37 @@ function renderProjects(filter="Tous"){
 
 function openModal(id){
  currentIndex=projects.findIndex(p=>p.id===id); if(currentIndex<0)return;
- const p=projects[currentIndex];
+ galleryIndex=0; renderModalProject();
+ const o=document.getElementById("modalOverlay");o.classList.add("open");o.setAttribute("aria-hidden","false");document.body.classList.add("locked");
+}
+function renderModalProject(){
+ const p=normalizeProject(projects[currentIndex]);
  document.getElementById("modalTag").textContent=p.tag||"Projet";
  document.getElementById("modalTitle").textContent=p.title;
  document.getElementById("modalMeta").textContent=[p.client,p.year,p.sector].filter(Boolean).join(" · ");
  document.getElementById("modalDesc").textContent=p.desc||"";
  document.getElementById("modalDeliverables").innerHTML=(p.deliverables||[]).map(x=>`<li>${esc(x)}</li>`).join("");
- const hero=document.getElementById("modalHero");
+ const images=(p.images&&p.images.length?p.images:[p.image]).filter(Boolean);
+ const media=document.getElementById("modalMedia"), hero=document.getElementById("modalHero");
  hero.style.background=`linear-gradient(135deg, ${p.c1||"#2B2E83"}, ${p.c2||"#17173A"})`;
- hero.innerHTML=p.image?`<img src="${esc(p.image)}" alt="" style="width:100%;height:100%;object-fit:cover">`:`<div class="art-word" style="top:35px;left:35px;font-size:clamp(48px,8vw,90px)">${esc(p.title)}<br><em>${esc((p.tag||"DESIGN").toUpperCase())}</em></div>`;
- const o=document.getElementById("modalOverlay");o.classList.add("open");o.setAttribute("aria-hidden","false");document.body.classList.add("locked");
+ if(images.length){
+   const src=images[galleryIndex]||images[0];
+   media.innerHTML=`<img class="modal-main-image" src="${esc(src)}" alt="${esc(p.title)} — visuel ${galleryIndex+1}" loading="eager">`;
+   const img=media.querySelector("img");
+   img.onload=()=>{hero.style.setProperty("--media-ratio", `${img.naturalWidth}/${img.naturalHeight}`)};
+   document.getElementById("galleryCounter").textContent=`${galleryIndex+1} / ${images.length}`;
+   document.getElementById("galleryPrev").hidden=images.length<2;document.getElementById("galleryNext").hidden=images.length<2;
+ }else{
+   media.innerHTML=`<div class="modal-placeholder"><div class="art-word">${esc(p.title)}<br><em>${esc((p.tag||"DESIGN").toUpperCase())}</em></div></div>`;
+   hero.style.setProperty("--media-ratio","16/9");document.getElementById("galleryCounter").textContent="";document.getElementById("galleryPrev").hidden=true;document.getElementById("galleryNext").hidden=true;
+ }
+ const thumbs=document.getElementById("galleryThumbs");
+ thumbs.innerHTML=images.map((src,i)=>`<button class="gallery-thumb ${i===galleryIndex?"active":""}" data-i="${i}" aria-label="Voir le visuel ${i+1}"><img src="${esc(src)}" alt=""></button>`).join("");
+ thumbs.querySelectorAll("button").forEach(b=>b.onclick=()=>{galleryIndex=Number(b.dataset.i);renderModalProject()});
+}
+function moveGallery(dir){
+ const p=normalizeProject(projects[currentIndex]);const images=(p.images&&p.images.length?p.images:[p.image]).filter(Boolean);if(images.length<2)return;
+ galleryIndex=(galleryIndex+dir+images.length)%images.length;renderModalProject();
 }
 function closeModal(){document.getElementById("modalOverlay").classList.remove("open");document.body.classList.remove("locked")}
 function moveModal(dir){if(!projects.length)return;currentIndex=(currentIndex+dir+projects.length)%projects.length;openModal(projects[currentIndex].id)}
@@ -51,6 +79,8 @@ document.getElementById("modalClose").onclick=closeModal;
 document.getElementById("modalOverlay").addEventListener("click",e=>{if(e.target.id==="modalOverlay")closeModal()});
 document.getElementById("modalPrev").onclick=()=>moveModal(-1);
 document.getElementById("modalNext").onclick=()=>moveModal(1);
+document.getElementById("galleryPrev").onclick=()=>moveGallery(-1);
+document.getElementById("galleryNext").onclick=()=>moveGallery(1);
 
 const menuBtn=document.getElementById("menuBtn"),navLinks=document.getElementById("navLinks");
 menuBtn.onclick=()=>{const open=navLinks.classList.toggle("open");menuBtn.setAttribute("aria-expanded",open)};
@@ -82,34 +112,46 @@ function renderAdmin(){
  list.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>deleteProject(Number(b.dataset.del)));
 }
 function resetForm(){
- document.getElementById("adminForm").reset();document.getElementById("projectId").value="";imageData="";document.getElementById("imagePreview").innerHTML="";document.getElementById("pColor1").value="#2B2E83";document.getElementById("pColor2").value="#17173A";
+ document.getElementById("adminForm").reset();document.getElementById("projectId").value="";imageData=[];renderImagePreview();document.getElementById("pColor1").value="#2B2E83";document.getElementById("pColor2").value="#17173A";
+}
+function renderImagePreview(){
+ const wrap=document.getElementById("imagePreview");document.getElementById("imageCount").textContent=`${imageData.length}/6`;
+ wrap.innerHTML=imageData.map((src,i)=>`<div class="image-preview-item"><img src="${esc(src)}" alt="Visuel ${i+1}"><button type="button" data-remove-image="${i}" aria-label="Supprimer le visuel ${i+1}">×</button><span>${i+1}</span></div>`).join("");
+ wrap.querySelectorAll("[data-remove-image]").forEach(b=>b.onclick=()=>{imageData.splice(Number(b.dataset.removeImage),1);renderImagePreview();autoSaveDraft()});
 }
 function editProject(id){
  const p=projects.find(x=>x.id===id);if(!p)return;
- document.getElementById("projectId").value=p.id;document.getElementById("pTitle").value=p.title||"";document.getElementById("pTag").value=p.tag||"";document.getElementById("pClient").value=p.client||"";document.getElementById("pYear").value=p.year||"";document.getElementById("pSector").value=p.sector||"";document.getElementById("pColor1").value=p.c1||"#2B2E83";document.getElementById("pColor2").value=p.c2||"#17173A";document.getElementById("pDesc").value=p.desc||"";document.getElementById("pDeliverables").value=(p.deliverables||[]).join("\n");imageData=p.image||"";document.getElementById("imagePreview").innerHTML=imageData?`<img src="${esc(imageData)}" alt="">`:"";
+ document.getElementById("projectId").value=p.id;document.getElementById("pTitle").value=p.title||"";document.getElementById("pTag").value=p.tag||"";document.getElementById("pClient").value=p.client||"";document.getElementById("pYear").value=p.year||"";document.getElementById("pSector").value=p.sector||"";document.getElementById("pColor1").value=p.c1||"#2B2E83";document.getElementById("pColor2").value=p.c2||"#17173A";document.getElementById("pDesc").value=p.desc||"";document.getElementById("pDeliverables").value=(p.deliverables||[]).join("\n");imageData=(p.images&&p.images.length?p.images:(p.image?[p.image]:[])).slice(0,6);renderImagePreview();
 }
 function deleteProject(id){if(!confirm("Supprimer ce projet ?"))return;projects=projects.filter(p=>p.id!==id);saveProjects();renderAdmin();renderProjects(document.querySelector(".filters .active").dataset.filter)}
 document.getElementById("adminCancel").onclick=resetForm;
-document.getElementById("removeImage").onclick=()=>{imageData="";document.getElementById("imagePreview").innerHTML=""};
+document.getElementById("removeImage").onclick=()=>{imageData=[];renderImagePreview();autoSaveDraft()};
 document.getElementById("pImage").addEventListener("change",e=>{
- const file=e.target.files[0];if(!file)return;
- if(file.size>3*1024*1024){alert("Image trop lourde. Maximum : 3 Mo.");e.target.value="";return}
- const r=new FileReader();r.onload=()=>{imageData=r.result;document.getElementById("imagePreview").innerHTML=`<img src="${esc(imageData)}" alt="">`};r.readAsDataURL(file);
+ const files=[...e.target.files].filter(f=>f.type.startsWith("image/"));if(!files.length)return;
+ if(imageData.length+files.length>6){alert("Maximum 6 images par projet.");e.target.value="";return}
+ let done=0;
+ files.forEach(file=>{compressImage(file,(data)=>{imageData.push(data);done++;if(done===files.length){renderImagePreview();autoSaveDraft();e.target.value=""}})});
 });
+function compressImage(file,cb){
+ const r=new FileReader();r.onload=()=>{const img=new Image();img.onload=()=>{const max=1800,scale=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));const c=document.createElement("canvas");c.width=Math.round(img.naturalWidth*scale);c.height=Math.round(img.naturalHeight*scale);c.getContext("2d").drawImage(img,0,0,c.width,c.height);cb(c.toDataURL("image/jpeg",.82))};img.src=r.result};r.readAsDataURL(file);
+}
+function formProject(){return normalizeProject({id:Number(document.getElementById("projectId").value)||Date.now(),title:document.getElementById("pTitle").value.trim(),tag:document.getElementById("pTag").value.trim(),client:document.getElementById("pClient").value.trim(),year:document.getElementById("pYear").value.trim(),sector:document.getElementById("pSector").value.trim(),c1:document.getElementById("pColor1").value,c2:document.getElementById("pColor2").value,desc:document.getElementById("pDesc").value.trim(),deliverables:document.getElementById("pDeliverables").value.split("\n").map(x=>x.trim()).filter(Boolean),images:imageData});}
+function autoSaveDraft(){try{localStorage.setItem("enosh_project_draft_v1",JSON.stringify(formProject()))}catch{}}
+document.getElementById("adminForm").addEventListener("input",autoSaveDraft);
 document.getElementById("adminForm").addEventListener("submit",e=>{
- e.preventDefault();
- const id=Number(document.getElementById("projectId").value)||Date.now();
- const p={id,title:document.getElementById("pTitle").value.trim(),tag:document.getElementById("pTag").value.trim(),client:document.getElementById("pClient").value.trim(),year:document.getElementById("pYear").value.trim(),sector:document.getElementById("pSector").value.trim(),c1:document.getElementById("pColor1").value,c2:document.getElementById("pColor2").value,desc:document.getElementById("pDesc").value.trim(),deliverables:document.getElementById("pDeliverables").value.split("\n").map(x=>x.trim()).filter(Boolean),image:imageData};
- const i=projects.findIndex(x=>x.id===id);if(i>=0)projects[i]=p;else projects.push(p);saveProjects();renderAdmin();renderProjects(document.querySelector(".filters .active").dataset.filter);resetForm();document.getElementById("adminStatus").textContent="Projet enregistré.";
+ e.preventDefault();const p=formProject();if(!p.title||!p.tag){document.getElementById("adminStatus").textContent="Titre et catégorie sont obligatoires.";return}
+ const i=projects.findIndex(x=>x.id===p.id);if(i>=0)projects[i]=p;else projects.push(p);
+ if(saveProjects()){localStorage.removeItem("enosh_project_draft_v1");renderAdmin();renderProjects(document.querySelector(".filters .active").dataset.filter);resetForm();document.getElementById("adminStatus").textContent="✓ Projet enregistré automatiquement dans ce navigateur."}
 });
+
 document.getElementById("adminExport").onclick=()=>{
  const blob=new Blob([JSON.stringify(projects,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="enosh-projects.json";a.click();URL.revokeObjectURL(a.href);
 };
 document.getElementById("adminImport").addEventListener("change",e=>{
  const file=e.target.files[0];if(!file)return;const r=new FileReader();
- r.onload=()=>{try{const data=JSON.parse(r.result);if(!Array.isArray(data))throw 0;projects=data;saveProjects();renderAdmin();renderProjects("Tous");document.getElementById("adminStatus").textContent="Import terminé."}catch{alert("Fichier JSON invalide.")}};r.readAsText(file);
+ r.onload=()=>{try{const data=JSON.parse(r.result);if(!Array.isArray(data))throw 0;projects=data.map(normalizeProject);saveProjects();renderAdmin();renderProjects("Tous");document.getElementById("adminStatus").textContent="Import terminé."}catch{alert("Fichier JSON invalide.")}};r.readAsText(file);
 });
-document.getElementById("adminReset").onclick=()=>{if(confirm("Revenir aux projets par défaut ?")){projects=structuredClone(defaultProjects);saveProjects();renderAdmin();renderProjects("Tous")}};
+document.getElementById("adminReset").onclick=()=>{if(confirm("Revenir aux projets par défaut ?")){projects=structuredClone(defaultProjects).map(normalizeProject);saveProjects();renderAdmin();renderProjects("Tous")}};
 
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeModal();adminOverlay.classList.remove("open");document.body.classList.remove("locked")}});
 

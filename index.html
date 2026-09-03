@@ -182,14 +182,20 @@
 <div class="modal-overlay" id="modalOverlay" aria-hidden="true">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <button class="modal-close" id="modalClose" aria-label="Fermer">×</button>
-    <div id="modalHero" class="modal-hero"></div>
+    <div id="modalHero" class="modal-hero">
+      <div id="modalMedia" class="modal-media-frame"></div>
+      <div class="gallery-counter" id="galleryCounter"></div>
+      <button class="gallery-btn gallery-prev" id="galleryPrev" aria-label="Image précédente">‹</button>
+      <button class="gallery-btn gallery-next" id="galleryNext" aria-label="Image suivante">›</button>
+    </div>
+    <div id="galleryThumbs" class="gallery-thumbs"></div>
     <div class="modal-body">
       <div class="modal-tag" id="modalTag"></div>
       <h2 id="modalTitle"></h2>
       <div class="modal-meta" id="modalMeta"></div>
       <p id="modalDesc"></p>
       <ul id="modalDeliverables"></ul>
-      <div class="modal-nav"><button id="modalPrev">← Précédent</button><button id="modalNext">Suivant →</button></div>
+      <div class="modal-nav"><button id="modalPrev">← Projet précédent</button><button id="modalNext">Projet suivant →</button></div>
     </div>
   </div>
 </div>
@@ -215,7 +221,13 @@
         <label>Couleur 2<input id="pColor2" value="#17173A"></label>
         <label>Description<textarea id="pDesc" rows="4"></textarea></label>
         <label>Livrables (un par ligne)<textarea id="pDeliverables" rows="4"></textarea></label>
-        <div class="image-picker"><div id="imagePreview"></div><label class="file-label">Choisir une image<input id="pImage" type="file" accept="image/*"></label><button type="button" id="removeImage">Supprimer l'image</button><small>JPG/PNG/WebP · 3 Mo max</small></div>
+        <div class="image-picker">
+          <div class="image-picker-head"><div><strong>Visuels du projet</strong><small>Ajoute jusqu'à 6 images. Elles seront affichées avec leur format réel.</small></div><span id="imageCount" class="image-count">0/6</span></div>
+          <div id="imagePreview" class="image-preview-grid"></div>
+          <label class="file-label">＋ Ajouter jusqu'à 6 images<input id="pImage" type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple></label>
+          <button type="button" id="removeImage">Supprimer tous les visuels</button>
+          <small>JPG / PNG / WebP / AVIF · compression automatique · 6 images maximum</small>
+        </div>
         <div class="admin-form-actions"><button class="btn btn-primary" type="submit">Enregistrer</button><button class="btn btn-ghost" type="button" id="adminCancel">Annuler</button></div>
         <div id="adminStatus"></div>
       </form>
