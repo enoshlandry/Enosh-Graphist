@@ -1,216 +1,73 @@
 const SUPABASE_URL="https://gsndkjbjflbnhqfaufca.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY="sb_publishable_tVsDipwNRIccqE18qXqRLg_n7GmyB6h";
 const db=supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
-
 const state={projects:[],filter:"Tous",current:null,gallery:0,selectedFiles:[]};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
-
 const defaultProjects=[
- {id:"demo-1",title:"Campagne Agro",tag:"Campagne",client:"Projet campagne",year:"2026",sector:"Agroalimentaire",c1:"#F2941D",c2:"#FFB65C",desc:"Direction artistique et déclinaison d'une campagne pensée pour créer de la visibilité autour d'un produit grand public.",deliverables:["Concept visuel","Key visual","Déclinaisons print","Déclinaisons social media"],images:[]},
- {id:"demo-2",title:"Social Impact",tag:"Digital",client:"Projet digital",year:"2026",sector:"Communication",c1:"#2B2E83",c2:"#6B70D6",desc:"Système de contenus social media conçu pour garder une présence régulière, reconnaissable et cohérente.",deliverables:["Direction visuelle","Posts","Stories","Templates"],images:[]},
- {id:"demo-3",title:"Packaging",tag:"Print",client:"Projet packaging",year:"2025",sector:"FMCG",c1:"#17173A",c2:"#F2941D",desc:"Travail de mise en valeur produit et de hiérarchie visuelle pour un support packaging destiné au point de vente.",deliverables:["Piste graphique","Hiérarchie informationnelle","Exécution","Fichiers production"],images:[]},
- {id:"demo-4",title:"PLV Retail",tag:"Print",client:"Projet retail",year:"2025",sector:"Distribution",c1:"#3C3FA0",c2:"#FFB65C",desc:"Création de supports de visibilité pensés pour attirer le regard et faciliter la compréhension de l'offre en magasin.",deliverables:["Concept","Affiche","PLV","Déclinaisons"],images:[]},
- {id:"demo-5",title:"Campagne Saison",tag:"Campagne",client:"Projet 360°",year:"2025",sector:"Grand public",c1:"#F2941D",c2:"#2B2E83",desc:"Une idée centrale adaptée à plusieurs points de contact pour conserver la même personnalité visuelle pendant toute la campagne.",deliverables:["Concept","Key visual","Digital","Print","Déclinaisons"],images:[]},
- {id:"demo-6",title:"Direction Artistique",tag:"Direction artistique",client:"Projet créatif",year:"2026",sector:"Communication",c1:"#17173A",c2:"#6B70D6",desc:"Construction d'une direction visuelle de campagne : ton, composition, rythme, système graphique et supervision des déclinaisons.",deliverables:["Moodboard","Direction artistique","Système graphique","Suivi créatif"],images:[]}
+{id:"demo-1",title:"Campagne Agro",tag:"Campagne",client:"Projet campagne",year:"2026",sector:"Agroalimentaire",c1:"#F2941D",c2:"#FFB65C",desc:"Direction artistique et déclinaison d'une campagne pensée pour créer de la visibilité autour d'un produit grand public.",deliverables:["Concept visuel","Key visual","Déclinaisons print","Déclinaisons social media"],images:[]},
+{id:"demo-2",title:"Social Impact",tag:"Digital",client:"Projet digital",year:"2026",sector:"Communication",c1:"#2B2E83",c2:"#6B70D6",desc:"Système de contenus social media conçu pour garder une présence régulière, reconnaissable et cohérente.",deliverables:["Direction visuelle","Posts","Stories","Templates"],images:[]},
+{id:"demo-3",title:"Packaging",tag:"Print",client:"Projet packaging",year:"2025",sector:"FMCG",c1:"#17173A",c2:"#F2941D",desc:"Travail de mise en valeur produit et de hiérarchie visuelle pour un support packaging destiné au point de vente.",deliverables:["Piste graphique","Hiérarchie informationnelle","Exécution","Fichiers production"],images:[]},
+{id:"demo-4",title:"PLV Retail",tag:"Print",client:"Projet retail",year:"2025",sector:"Distribution",c1:"#3C3FA0",c2:"#FFB65C",desc:"Création de supports de visibilité pensés pour attirer le regard et faciliter la compréhension de l'offre en magasin.",deliverables:["Concept","Affiche","PLV","Déclinaisons"],images:[]},
+{id:"demo-5",title:"Campagne Saison",tag:"Campagne",client:"Projet 360°",year:"2025",sector:"Grand public",c1:"#F2941D",c2:"#2B2E83",desc:"Une idée centrale adaptée à plusieurs points de contact pour conserver la même personnalité visuelle pendant toute la campagne.",deliverables:["Concept","Key visual","Digital","Print","Déclinaisons"],images:[]},
+{id:"demo-6",title:"Direction Artistique",tag:"Direction artistique",client:"Projet créatif",year:"2026",sector:"Communication",c1:"#17173A",c2:"#6B70D6",desc:"Construction d'une direction visuelle de campagne : ton, composition, rythme, système graphique et supervision des déclinaisons.",deliverables:["Moodboard","Direction artistique","Système graphique","Suivi créatif"],images:[]}
 ];
-
-function normalize(p){return {...p,images:(p.images||[]).slice(0,6)};}
-
+function normalize(p){return {...p,tag:p.tag||p.category,desc:p.desc||p.description,images:(p.images||[]).slice(0,6)};}
 async function loadProjects(){
   const {data,error}=await db.from("projects").select("*").order("created_at",{ascending:false});
-  if(error){console.error(error); state.projects=defaultProjects; renderProjects(); return;}
+  if(error){console.error(error);state.projects=defaultProjects;renderProjects();return;}
   const rows=data||[];
-  if(!rows.length){state.projects=defaultProjects; renderProjects(); return;}
+  if(!rows.length){state.projects=defaultProjects;renderProjects();return;}
   const ids=rows.map(p=>p.id);
   const {data:imgs,error:imgError}=await db.from("project_images").select("id,project_id,image_url,position").in("project_id",ids).order("position",{ascending:true});
-  if(imgError) console.error(imgError);
-  const grouped={};
-  (imgs||[]).forEach(i=>(grouped[i.project_id]??=[]).push(i));
-  state.projects=rows.map(p=>normalize({...p,tag:p.category,desc:p.description,images:(grouped[p.id]||[]).sort((a,b)=>a.position-b.position)}));
+  if(imgError)console.error(imgError);
+  const grouped={};(imgs||[]).forEach(i=>(grouped[i.project_id]??=[]).push(i));
+  state.projects=rows.map(p=>normalize({...p,images:(grouped[p.id]||[]).sort((a,b)=>a.position-b.position)}));
   renderProjects();
 }
-
 function renderProjects(){
-  const grid=$("workGrid");
-  const list=state.projects.filter(p=>state.filter==="Tous"||p.tag===state.filter);
+  const grid=$("workGrid"),list=state.projects.filter(p=>state.filter==="Tous"||p.tag===state.filter);
+  $("projectCount").textContent=list.length;
   if(!list.length){grid.innerHTML='<p style="color:var(--muted)">Aucun projet dans cette catégorie pour le moment.</p>';return;}
-  grid.innerHTML=list.map(p=>{
-    const src=p.images?.[0]?.image_url||"";
-    const art=`<div class="work-art" style="--c1:${esc(p.c1||"#2B2E83")};--c2:${esc(p.c2||"#17173A")}"><div class="art-word">${esc((p.title||"Projet").split(" ").slice(0,2).join(" "))}<br><em>${esc((p.tag||"DESIGN").toUpperCase())}</em></div></div>`;
-    return `<article class="work-card" data-id="${esc(p.id)}" tabindex="0"><div class="work-image">${src?`<img src="${esc(src)}" alt="${esc(p.title)}" loading="lazy">`:art}</div><div class="work-info"><div><h3>${esc(p.title)}</h3><span>${esc(p.tag||"")} · ${esc(p.year||"")}</span></div><div class="work-arrow">↗</div></div></article>`;
-  }).join("");
-  grid.querySelectorAll(".work-card").forEach(card=>{
-    card.addEventListener("click",()=>openProject(card.dataset.id));
-    card.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();openProject(card.dataset.id)}});
-  });
+  grid.innerHTML=list.map(p=>{const src=p.images?.[0]?.image_url||"";const art=`<div class="work-art" style="--c1:${esc(p.c1||"#2B2E83")};--c2:${esc(p.c2||"#17173A")}"><div class="art-word">${esc((p.title||"Projet").split(" ").slice(0,2).join(" "))}<br><em>${esc((p.tag||"DESIGN").toUpperCase())}</em></div></div>`;return `<article class="work-card" data-id="${esc(p.id)}" tabindex="0" role="button" aria-label="Ouvrir le projet ${esc(p.title)}"><div class="work-image">${src?`<img src="${esc(src)}" alt="${esc(p.title)}" loading="lazy">`:art}</div><div class="work-info"><div><h3>${esc(p.title)}</h3><span>${esc(p.tag||"")} · ${esc(p.year||"")}</span></div><div class="work-arrow">↗</div></div></article>`}).join("");
+  grid.querySelectorAll(".work-card").forEach(card=>{card.addEventListener("click",()=>openProject(card.dataset.id));card.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();openProject(card.dataset.id)}})});
 }
-
 function setupGallery(){
-  $("modalClose").onclick=closeProject;
-  $("modalOverlay").addEventListener("click",e=>{if(e.target.id==="modalOverlay")closeProject();});
-  $("galleryPrev").onclick=()=>changeGallery(-1);
-  $("galleryNext").onclick=()=>changeGallery(1);
-  $("modalPrev").onclick=()=>moveProject(-1);
-  $("modalNext").onclick=()=>moveProject(1);
+  $("modalClose").onclick=closeProject;$("modalOverlay").addEventListener("click",e=>{if(e.target.id==="modalOverlay")closeProject()});$("galleryPrev").onclick=()=>changeGallery(-1);$("galleryNext").onclick=()=>changeGallery(1);$("modalPrev").onclick=()=>moveProject(-1);$("modalNext").onclick=()=>moveProject(1);
+  let startX=0;$("modalHero").addEventListener("touchstart",e=>{startX=e.changedTouches[0].clientX},{passive:true});$("modalHero").addEventListener("touchend",e=>{const dx=e.changedTouches[0].clientX-startX;if(Math.abs(dx)>45)changeGallery(dx<0?1:-1)},{passive:true});
 }
-
-function openProject(id){
-  const p=state.projects.find(x=>String(x.id)===String(id)); if(!p)return;
-  state.current=p; state.gallery=0; renderProjectModal(true);
-  const overlay=$("modalOverlay");
-  overlay.classList.remove("open"); void overlay.offsetWidth; overlay.classList.add("open"); overlay.setAttribute("aria-hidden","false");
-  document.body.classList.add("locked");
+function openProject(id){const p=state.projects.find(x=>String(x.id)===String(id));if(!p)return;state.current=p;state.gallery=0;renderProjectModal();const o=$("modalOverlay");o.classList.add("open");o.setAttribute("aria-hidden","false");document.body.classList.add("locked");setTimeout(()=>$("modalClose").focus(),80)}
+function renderProjectModal(){
+  const p=state.current;if(!p)return;const images=(p.images||[]).filter(x=>x&&x.image_url).map(x=>x.image_url);$("modalTag").textContent=p.tag||"Projet";$("modalTitle").textContent=p.title||"";$("modalMeta").textContent=[p.client,p.year,p.sector].filter(Boolean).join(" · ");$("modalDesc").textContent=p.desc||p.description||"";$("modalDeliverables").innerHTML=(p.deliverables||[]).map(x=>`<li>${esc(x)}</li>`).join("");const hero=$("modalHero"),media=$("modalMedia");hero.style.setProperty("--c1",p.c1||"#2B2E83");hero.style.setProperty("--c2",p.c2||"#17173A");
+  if(images.length){const idx=Math.min(state.gallery,images.length-1),src=images[idx];media.innerHTML=`<img class="modal-main-image" src="${esc(src)}" alt="${esc(p.title)} — visuel ${idx+1}" decoding="async">`;const img=media.querySelector("img");img.onload=()=>{const ratio=img.naturalWidth&&img.naturalHeight?img.naturalWidth/img.naturalHeight:16/9;hero.style.setProperty("--media-ratio",ratio)};$("galleryCounter").textContent=`${idx+1} / ${images.length}`;$("galleryPrev").hidden=images.length<2;$("galleryNext").hidden=images.length<2}else{media.innerHTML=`<div class="modal-placeholder" style="--c1:${esc(p.c1||"#2B2E83")};--c2:${esc(p.c2||"#17173A")}"><div class="art-word">${esc(p.title||"Projet")}<br><em>${esc((p.tag||"DESIGN").toUpperCase())}</em></div></div>`;hero.style.setProperty("--media-ratio","16/9");$("galleryCounter").textContent="";$("galleryPrev").hidden=true;$("galleryNext").hidden=true}
+  const thumbs=$("galleryThumbs");thumbs.innerHTML=images.map((src,i)=>`<button type="button" class="gallery-thumb ${i===state.gallery?"active":""}" data-i="${i}" aria-label="Voir le visuel ${i+1}"><img src="${esc(src)}" alt=""></button>`).join("");thumbs.querySelectorAll("button").forEach(b=>b.onclick=()=>{state.gallery=Number(b.dataset.i);renderProjectModal()});
 }
-
-function renderProjectModal(animated=false){
-  const p=state.current; if(!p)return;
-  const images=(p.images||[]).filter(x=>x&&x.image_url).map(x=>x.image_url);
-  $("modalTag").textContent=p.tag||"Projet";
-  $("modalTitle").textContent=p.title||"";
-  $("modalMeta").textContent=[p.client,p.year,p.sector].filter(Boolean).join(" · ");
-  $("modalDesc").textContent=p.desc||p.description||"";
-  $("modalDeliverables").innerHTML=(p.deliverables||[]).map(x=>`<li>${esc(x)}</li>`).join("");
-  const hero=$("modalHero"), media=$("modalMedia");
-  hero.style.setProperty("--c1",p.c1||"#2B2E83"); hero.style.setProperty("--c2",p.c2||"#17173A");
-  if(images.length){
-    const src=images[Math.min(state.gallery,images.length-1)];
-    media.classList.remove("gallery-enter"); void media.offsetWidth;
-    media.innerHTML=`<img class="modal-main-image" src="${esc(src)}" alt="${esc(p.title)} — visuel ${state.gallery+1}" decoding="async">`;
-    media.classList.add("gallery-enter");
-    const img=media.querySelector("img");
-    img.onload=()=>{
-      const ratio=img.naturalWidth&&img.naturalHeight?img.naturalWidth/img.naturalHeight:16/9;
-      hero.style.setProperty("--media-ratio",ratio);
-    };
-    $("galleryCounter").textContent=`${state.gallery+1} / ${images.length}`;
-    $("galleryPrev").hidden=images.length<2; $("galleryNext").hidden=images.length<2;
-  } else {
-    media.classList.remove("gallery-enter"); void media.offsetWidth;
-    media.innerHTML=`<div class="modal-placeholder" style="--c1:${esc(p.c1||"#2B2E83")};--c2:${esc(p.c2||"#17173A")}"><div class="art-word">${esc(p.title||"Projet")}<br><em>${esc((p.tag||"DESIGN").toUpperCase())}</em></div></div>`;
-    media.classList.add("gallery-enter"); hero.style.setProperty("--media-ratio","16/9"); $("galleryCounter").textContent=""; $("galleryPrev").hidden=true; $("galleryNext").hidden=true;
-  }
-  const thumbs=$("galleryThumbs");
-  thumbs.innerHTML=images.map((src,i)=>`<button type="button" class="gallery-thumb ${i===state.gallery?"active":""}" data-i="${i}" aria-label="Voir le visuel ${i+1}"><img src="${esc(src)}" alt=""></button>`).join("");
-  thumbs.querySelectorAll("button").forEach(b=>b.onclick=()=>{state.gallery=Number(b.dataset.i);renderProjectModal(true);});
-}
-function changeGallery(dir){const n=state.current?.images?.filter(x=>x?.image_url).length||0;if(n<2)return;state.gallery=(state.gallery+dir+n)%n;renderProjectModal(true);}
-function moveProject(dir){const list=state.projects;if(!list.length)return;const i=list.findIndex(x=>String(x.id)===String(state.current?.id));const next=(i+dir+list.length)%list.length;openProject(list[next].id);}
-function closeProject(){const o=$("modalOverlay");o.classList.remove("open");o.setAttribute("aria-hidden","true");document.body.classList.remove("locked");}
-
-async function compressFile(file){
-  if(!file.type.startsWith("image/")) throw new Error("Fichier non image");
-  return await new Promise((resolve,reject)=>{
-    const reader=new FileReader(); reader.onerror=()=>reject(reader.error); reader.onload=()=>{
-      const img=new Image(); img.onerror=()=>reject(new Error("Image illisible")); img.onload=()=>{
-        const max=2200, scale=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));
-        const c=document.createElement("canvas"); c.width=Math.max(1,Math.round(img.naturalWidth*scale)); c.height=Math.max(1,Math.round(img.naturalHeight*scale));
-        c.getContext("2d").drawImage(img,0,0,c.width,c.height); c.toBlob(b=>b?resolve(b):reject(new Error("Compression impossible")),"image/jpeg",.88);
-      }; img.src=reader.result;
-    }; reader.readAsDataURL(file);
-  });
-}
-
+function changeGallery(dir){const n=state.current?.images?.filter(x=>x?.image_url).length||0;if(n<2)return;state.gallery=(state.gallery+dir+n)%n;renderProjectModal()}
+function moveProject(dir){const list=state.projects;if(!list.length)return;const i=list.findIndex(x=>String(x.id)===String(state.current?.id));openProject(list[(i+dir+list.length)%list.length].id)}
+function closeProject(){const o=$("modalOverlay");o.classList.remove("open");o.setAttribute("aria-hidden","true");document.body.classList.remove("locked")}
+async function compressFile(file){if(!file.type.startsWith("image/"))throw new Error("Fichier non image");return await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onerror=()=>reject(reader.error);reader.onload=()=>{const img=new Image();img.onerror=()=>reject(new Error("Image illisible"));img.onload=()=>{const max=2200,scale=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));const c=document.createElement("canvas");c.width=Math.max(1,Math.round(img.naturalWidth*scale));c.height=Math.max(1,Math.round(img.naturalHeight*scale));c.getContext("2d").drawImage(img,0,0,c.width,c.height);c.toBlob(b=>b?resolve(b):reject(new Error("Compression impossible")),"image/jpeg",.88)};img.src=reader.result};reader.readAsDataURL(file)})}
 function setupAdmin(){
-  $("adminOpen").onclick=openAdmin; $("adminClose").onclick=closeAdmin;
-  $("adminOverlay").addEventListener("click",e=>{if(e.target.id==="adminOverlay")closeAdmin();});
-  $("adminLoginBtn").onclick=login;
-  $("adminPassword").addEventListener("keydown",e=>{if(e.key==="Enter")login();});
-  $("adminCancel").onclick=resetForm;
-  $("removeImage").onclick=()=>{state.selectedFiles=[];renderPreview();};
-  $("pImage").addEventListener("change",e=>{state.selectedFiles=[...e.target.files].filter(f=>f.type.startsWith("image/")).slice(0,6);renderPreview();e.target.value="";});
-  $("adminForm").addEventListener("submit",saveProject);
-  $("adminExport").onclick=exportData;
-  $("adminImport").addEventListener("change",importData);
-  $("adminReset").onclick=()=>{resetForm();$("adminStatus").textContent="Les projets de démonstration ne sont pas envoyés en ligne.";};
+  $("adminOpen").onclick=openAdmin;$("adminClose").onclick=closeAdmin;$("adminOverlay").addEventListener("click",e=>{if(e.target.id==="adminOverlay")closeAdmin()});$("adminLoginBtn").onclick=login;$("adminPassword").addEventListener("keydown",e=>{if(e.key==="Enter")login()});$("adminEmail").addEventListener("keydown",e=>{if(e.key==="Enter")login()});$("adminCancel").onclick=resetForm;$("removeImage").onclick=()=>{state.selectedFiles=[];renderPreview()};$("pImage").addEventListener("change",e=>{state.selectedFiles=[...e.target.files].filter(f=>f.type.startsWith("image/")).slice(0,6);renderPreview();e.target.value=""});$("adminForm").addEventListener("submit",saveProject);$("adminExport").onclick=exportData;$("adminImport").addEventListener("change",importData);$("adminReset").onclick=resetForm;$("adminLogout").onclick=logout;
 }
-async function openAdmin(){
-  $("adminOverlay").classList.add("open"); $("adminOverlay").setAttribute("aria-hidden","false"); document.body.classList.add("locked");
-  const {data}=await db.auth.getSession(); if(data.session)showAdmin(data.session.user); else showLogin();
+async function openAdmin(){$("adminOverlay").classList.add("open");$("adminOverlay").setAttribute("aria-hidden","false");document.body.classList.add("locked");const {data}=await db.auth.getSession();if(data.session)showAdmin(data.session.user);else showLogin()}
+function closeAdmin(){$("adminOverlay").classList.remove("open");$("adminOverlay").setAttribute("aria-hidden","true");document.body.classList.remove("locked")}
+function showLogin(){$("adminLogin").hidden=false;$ ("adminArea").hidden=true;$("adminLoginStatus").textContent=""}
+function showAdmin(user){$("adminLogin").hidden=true;$("adminArea").hidden=false;$("adminLoginStatus").textContent="";refreshAdmin()}
+async function login(){const email=$("adminEmail").value.trim(),pass=$("adminPassword").value;if(!email||!pass){$("adminLoginStatus").textContent="Email et mot de passe sont obligatoires.";return}$("adminLoginStatus").textContent="Connexion…";const {data,error}=await db.auth.signInWithPassword({email,password:pass});if(error){$("adminLoginStatus").textContent="Connexion refusée : "+error.message;return}showAdmin(data.user)}
+async function logout(){await db.auth.signOut();showLogin();$("adminPassword").value=""}
+function resetForm(){$("adminForm").reset();$("projectId").value="";state.selectedFiles=[];renderPreview();$("pColor1").value="#2B2E83";$("pColor2").value="#17173A";$("adminStatus").textContent="Nouveau projet."}
+function renderPreview(){$("imageCount").textContent=`${state.selectedFiles.length}/6`;$ ("imagePreview").innerHTML=state.selectedFiles.map((f,i)=>`<div class="image-preview-item"><img src="${URL.createObjectURL(f)}" alt="Visuel ${i+1}"><span>${i+1}</span></div>`).join("")}
+function editProject(id){const p=state.projects.find(x=>String(x.id)===String(id));if(!p)return;$("projectId").value=p.id;$("pTitle").value=p.title||"";$("pTag").value=p.tag||p.category||"";$("pClient").value=p.client||"";$("pYear").value=p.year||"";$("pSector").value=p.sector||"";$("pColor1").value=p.c1||"#2B2E83";$("pColor2").value=p.c2||"#17173A";$("pDesc").value=p.desc||p.description||"";$("pDeliverables").value=(p.deliverables||[]).join("\n");state.selectedFiles=[];renderPreview();$("adminStatus").textContent="Projet chargé. Sélectionne jusqu'à 6 nouvelles images pour remplacer la galerie.";$("pTitle").focus()}
+async function refreshAdmin(){const list=$("adminList"),online=state.projects.filter(p=>!String(p.id).startsWith("demo-"));if(!online.length){list.innerHTML='<p style="color:var(--muted);font-size:13px;padding:15px 0">Aucun projet en ligne pour le moment.</p>';return}list.innerHTML=online.map(p=>`<div class="admin-item"><div>${p.images?.[0]?`<img src="${esc(p.images[0].image_url)}" alt="">`:""}</div><div><b>${esc(p.title)}</b><br><small>${esc(p.tag||"")} · ${esc(p.year||"")} · ${(p.images||[]).length}/6 image(s)</small></div><div class="admin-item-actions"><button type="button" data-edit="${esc(p.id)}">Modifier</button><button type="button" data-del="${esc(p.id)}">Supprimer</button></div></div>`).join("");list.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>editProject(b.dataset.edit));list.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>deleteProject(b.dataset.del))}
+async function deleteProject(id){if(!confirm("Supprimer ce projet et ses visuels ?"))return;const {error}=await db.from("projects").delete().eq("id",id);if(error){$("adminStatus").textContent="Erreur : "+error.message;return}state.projects=state.projects.filter(p=>String(p.id)!==String(id));renderProjects();await loadProjects();refreshAdmin();resetForm();$("adminStatus").textContent="Projet supprimé."}
+async function saveProject(e){e.preventDefault();const title=$("pTitle").value.trim(),category=$("pTag").value.trim();if(!title||!category){$("adminStatus").textContent="Titre et catégorie sont obligatoires.";return}$("adminStatus").textContent="Enregistrement en ligne…";const id=$("projectId").value;const payload={title,category,description:$("pDesc").value.trim(),year:$("pYear").value.trim(),client:$("pClient").value.trim(),sector:$("pSector").value.trim()};let projectId=id;if(id){const {error}=await db.from("projects").update(payload).eq("id",id);if(error){$("adminStatus").textContent="Erreur : "+error.message;return}}else{const {data,error}=await db.from("projects").insert(payload).select().single();if(error){$("adminStatus").textContent="Erreur : "+error.message;return}projectId=data.id}
+  if(state.selectedFiles.length){const old=state.projects.find(p=>String(p.id)===String(projectId));if(old?.images?.length){const paths=old.images.map(i=>{try{return new URL(i.image_url).pathname.split("/storage/v1/object/public/portfolio/")[1]}catch{return null}}).filter(Boolean);if(paths.length)await db.storage.from("portfolio").remove(paths);await db.from("project_images").delete().eq("project_id",projectId)}for(let i=0;i<state.selectedFiles.length;i++){try{const blob=await compressFile(state.selectedFiles[i]);const path=`${projectId}/${Date.now()}-${i}.jpg`;const up=await db.storage.from("portfolio").upload(path,blob,{contentType:"image/jpeg",upsert:false});if(up.error)throw up.error;const pub=db.storage.from("portfolio").getPublicUrl(path).data.publicUrl;const ins=await db.from("project_images").insert({project_id:projectId,image_url:pub,position:i+1});if(ins.error)throw ins.error}catch(err){$("adminStatus").textContent="Erreur image : "+err.message;await loadProjects();refreshAdmin();return}}}
+  await loadProjects();refreshAdmin();resetForm();$("adminStatus").textContent="✓ Projet enregistré en ligne. Les visiteurs verront la modification.";
 }
-function closeAdmin(){$("adminOverlay").classList.remove("open");$("adminOverlay").setAttribute("aria-hidden","true");document.body.classList.remove("locked");}
-function showLogin(){$("adminLogin").hidden=false;$("adminArea").hidden=true;$("adminLoginStatus").textContent="";}
-function showAdmin(user){$("adminLogin").hidden=true;$("adminArea").hidden=false;$("adminLoginStatus").textContent="";refreshAdmin();}
-async function login(){
-  const email=prompt("Adresse email Supabase :"); if(!email)return;
-  const pass=$("adminPassword").value;
-  $("adminLoginStatus").textContent="Connexion…";
-  const {data,error}=await db.auth.signInWithPassword({email:email.trim(),password:pass});
-  if(error){$("adminLoginStatus").textContent="Connexion refusée : "+error.message;return;}
-  showAdmin(data.user);
-}
-function resetForm(){
-  $("adminForm").reset(); $("projectId").value=""; state.selectedFiles=[]; renderPreview(); $("pColor1").value="#2B2E83"; $("pColor2").value="#17173A"; $("adminStatus").textContent="Nouveau projet.";
-}
-function renderPreview(){
-  const wrap=$("imagePreview"); $("imageCount").textContent=`${state.selectedFiles.length}/6`;
-  wrap.innerHTML=state.selectedFiles.map((f,i)=>`<div class="image-preview-item"><img src="${URL.createObjectURL(f)}" alt="Visuel ${i+1}"><span>${i+1}</span></div>`).join("");
-}
-function editProject(id){
-  const p=state.projects.find(x=>String(x.id)===String(id));if(!p)return;
-  $("projectId").value=p.id;$("pTitle").value=p.title||"";$("pTag").value=p.tag||p.category||"";$("pClient").value=p.client||"";$("pYear").value=p.year||"";$("pSector").value=p.sector||"";$("pColor1").value=p.c1||"#2B2E83";$("pColor2").value=p.c2||"#17173A";$("pDesc").value=p.desc||p.description||"";$("pDeliverables").value=(p.deliverables||[]).join("\n");
-  state.selectedFiles=[];renderPreview();$("adminStatus").textContent="Projet chargé. Sélectionne jusqu'à 6 nouvelles images si tu veux remplacer la galerie.";
-}
-async function refreshAdmin(){
-  const list=$("adminList");
-  const online=state.projects.filter(p=>!String(p.id).startsWith("demo-"));
-  if(!online.length){list.innerHTML='<p style="color:var(--muted);font-size:13px;padding:15px 0">Aucun projet en ligne pour le moment.</p>';return;}
-  list.innerHTML=online.map(p=>`<div class="admin-item"><div>${p.images?.[0]?`<img src="${esc(p.images[0].image_url)}" alt="">`:''}</div><div><b>${esc(p.title)}</b><br><small>${esc(p.tag||"")} · ${esc(p.year||"")} · ${(p.images||[]).length}/6 image(s)</small></div><div class="admin-item-actions"><button type="button" data-edit="${esc(p.id)}">Modifier</button><button type="button" data-del="${esc(p.id)}">Supprimer</button></div></div>`).join("");
-  list.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>editProject(b.dataset.edit));
-  list.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>deleteProject(b.dataset.del));
-}
-async function deleteProject(id){
-  if(!confirm("Supprimer ce projet et ses visuels ?"))return;
-  const {error}=await db.from("projects").delete().eq("id",id);
-  if(error){$("adminStatus").textContent="Erreur : "+error.message;return;}
-  state.projects=state.projects.filter(p=>String(p.id)!==String(id)); renderProjects(); refreshAdmin(); resetForm(); $("adminStatus").textContent="Projet supprimé.";
-  await loadProjects(); refreshAdmin();
-}
-async function saveProject(e){
-  e.preventDefault();
-  const title=$("pTitle").value.trim(), category=$("pTag").value.trim();
-  if(!title||!category){$("adminStatus").textContent="Titre et catégorie sont obligatoires.";return;}
-  if(state.selectedFiles.length>6){$("adminStatus").textContent="Maximum 6 images.";return;}
-  $("adminStatus").textContent="Enregistrement en ligne…";
-  const id=$("projectId").value;
-  const payload={title,category,description:$("pDesc").value.trim(),year:$("pYear").value.trim(),client:$("pClient").value.trim(),sector:$("pSector").value.trim()};
-  let projectId=id;
-  if(id){
-    const {error}=await db.from("projects").update(payload).eq("id",id); if(error){$("adminStatus").textContent="Erreur : "+error.message;return;}
-  }else{
-    const {data,error}=await db.from("projects").insert(payload).select().single(); if(error){$("adminStatus").textContent="Erreur : "+error.message;return;} projectId=data.id;
-  }
-  if(state.selectedFiles.length){
-    const old=state.projects.find(p=>String(p.id)===String(projectId));
-    if(old?.images?.length){
-      const paths=old.images.map(i=>{try{return new URL(i.image_url).pathname.split("/storage/v1/object/public/portfolio/")[1]}catch{return null}}).filter(Boolean);
-      if(paths.length) await db.storage.from("portfolio").remove(paths);
-      await db.from("project_images").delete().eq("project_id",projectId);
-    }
-    for(let i=0;i<state.selectedFiles.length;i++){
-      try{
-        const blob=await compressFile(state.selectedFiles[i]);
-        const path=`${projectId}/${Date.now()}-${i}.jpg`;
-        const up=await db.storage.from("portfolio").upload(path,blob,{contentType:"image/jpeg",upsert:false});
-        if(up.error)throw up.error;
-        const pub=db.storage.from("portfolio").getPublicUrl(path).data.publicUrl;
-        const ins=await db.from("project_images").insert({project_id:projectId,image_url:pub,position:i+1});
-        if(ins.error)throw ins.error;
-      }catch(err){$("adminStatus").textContent="Erreur image : "+err.message;await loadProjects();refreshAdmin();return;}
-    }
-  }
-  await loadProjects(); refreshAdmin(); resetForm(); $("adminStatus").textContent="✓ Projet enregistré en ligne. Les visiteurs verront la modification.";
-}
-function exportData(){
-  const data=state.projects.filter(p=>!String(p.id).startsWith("demo-")).map(p=>({...p,images:(p.images||[]).map(i=>i.image_url||i)}));
-  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}));a.download="enosh-projects.json";a.click();URL.revokeObjectURL(a.href);
-}
-function importData(){alert("L'import JSON sert uniquement de sauvegarde locale. Pour publier des images, utilise Ajouter un projet.");}
-
-function setupFilters(){document.querySelectorAll(".filters button").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".filters button").forEach(x=>x.classList.remove("active"));b.classList.add("active");state.filter=b.dataset.filter;renderProjects();}));}
-function setupMenu(){const b=$("menuBtn"),n=$("navLinks");b.onclick=()=>{const open=n.classList.toggle("open");b.setAttribute("aria-expanded",open)};n.querySelectorAll("a").forEach(a=>a.onclick=()=>n.classList.remove("open"));}
-function setupContact(){$("contactForm").addEventListener("submit",e=>{e.preventDefault();const f=new FormData(e.currentTarget);const subject=encodeURIComponent("Projet — "+f.get("name"));const body=encodeURIComponent(`Bonjour Enosh,\n\nNom : ${f.get("name")}\nEmail : ${f.get("email")}\n\nProjet :\n${f.get("message")}\n\nMerci.`);window.location.href=`mailto:contact@enoshgraphist.com?subject=${subject}&body=${body}`;document.querySelector(".field-status").textContent="Votre messagerie va s'ouvrir avec le brief prérempli.";});}
-
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeProject();closeAdmin();}if($("modalOverlay").classList.contains("open")){if(e.key==="ArrowLeft")changeGallery(-1);if(e.key==="ArrowRight")changeGallery(1);}});
-
-document.addEventListener("DOMContentLoaded",async()=>{setupMenu();setupFilters();setupGallery();setupAdmin();setupContact();await loadProjects();});
+function exportData(){const data=state.projects.filter(p=>!String(p.id).startsWith("demo-")).map(p=>({...p,images:(p.images||[]).map(i=>i.image_url||i)}));const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}));a.download="enosh-projects-backup.json";a.click();URL.revokeObjectURL(a.href)}
+function importData(e){e.target.value="";$("adminStatus").textContent="L'import JSON est conservé comme sauvegarde. Pour publier un projet, utilise le formulaire et Supabase."}
+function setupFilters(){document.querySelectorAll(".filters button").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".filters button").forEach(x=>x.classList.remove("active"));b.classList.add("active");state.filter=b.dataset.filter;renderProjects()}))}
+function setupMenu(){const b=$("menuBtn"),n=$("navLinks");b.onclick=()=>{const open=n.classList.toggle("open");b.setAttribute("aria-expanded",open)};n.querySelectorAll("a").forEach(a=>a.onclick=()=>{n.classList.remove("open");b.setAttribute("aria-expanded","false")})}
+function setupContact(){$("contactForm").addEventListener("submit",e=>{e.preventDefault();const f=new FormData(e.currentTarget),subject=encodeURIComponent("Projet — "+f.get("name")),body=encodeURIComponent(`Bonjour Enosh,\n\nNom : ${f.get("name")}\nEmail : ${f.get("email")}\nType : ${f.get("type")}\n\nProjet :\n${f.get("message")}\n\nMerci.`);window.location.href=`mailto:contact@enoshgraphist.com?subject=${subject}&body=${body}`;$("contactForm").querySelector(".field-status").textContent="Votre messagerie va s'ouvrir avec le brief prérempli."})}
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeProject();closeAdmin()}if($("modalOverlay").classList.contains("open")){if(e.key==="ArrowLeft")changeGallery(-1);if(e.key==="ArrowRight")changeGallery(1)}});
+document.addEventListener("DOMContentLoaded",async()=>{setupMenu();setupFilters();setupGallery();setupAdmin();setupContact();await loadProjects()});
