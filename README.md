@@ -18,3 +18,8 @@ Version améliorée du portfolio, prête pour GitHub Pages.
 
 ## Sauvegarde
 Avant remplacement, conserver une copie de l'ancienne version. Le bouton « Exporter JSON » reste disponible dans l'administration pour exporter les projets en ligne.
+
+## Correctif Supabase 2
+- Le champ `sector` n’est plus envoyé à la table `projects`.
+- Le champ Secteur a été retiré de l’interface Admin car il n’existe pas dans le schéma actuel.
+- `script.js` utilise un paramètre de version pour éviter le chargement d’un ancien script mis en cache.
