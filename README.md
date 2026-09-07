@@ -7,7 +7,7 @@ Version améliorée du portfolio, prête pour GitHub Pages.
 - Authentification : Supabase Auth (email + mot de passe).
 - Tables utilisées : `projects` et `project_images`.
 - Storage utilisé : `portfolio`.
-- Aucun changement SQL n'est requis par cette V2.
+- Aucun changement SQL n'est requis par cette V2. Le formulaire n'exige pas de colonne `sector` dans `projects`.
 - Les images sont compressées côté navigateur puis envoyées au bucket `portfolio`.
 
 ## Déploiement
